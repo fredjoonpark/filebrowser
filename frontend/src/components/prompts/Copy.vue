@@ -125,38 +125,14 @@ export default {
       const dstItems = (await api.fetch(this.dest)).items;
       const conflict = upload.checkConflict(items, dstItems);
 
+      // Auto-resolve: copy conflicts get renamed to keep both files
       if (conflict.length > 0) {
-        this.showHover({
-          prompt: "resolve-conflict",
-          props: {
-            conflict: conflict,
-          },
-          confirm: (event, result) => {
-            event.preventDefault();
-            this.closeHovers();
-            for (let i = result.length - 1; i >= 0; i--) {
-              const item = result[i];
-              if (item.checked.length == 2) {
-                items[item.index].rename = true;
-              } else if (
-                item.checked.length == 1 &&
-                item.checked[0] == "origin"
-              ) {
-                items[item.index].overwrite = true;
-              } else {
-                items.splice(item.index, 1);
-              }
-            }
-            if (items.length > 0) {
-              action();
-            }
-          },
-        });
-
-        return;
+        for (const c of conflict) {
+          items[c.index].rename = true;
+        }
       }
 
-      action(false, false);
+      action();
     },
   },
 };

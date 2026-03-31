@@ -698,35 +698,14 @@ const paste = (event: Event) => {
 
   const conflict = upload.checkConflict(items, fileStore.req!.items);
 
+  // Auto-resolve: copy/move conflicts get renamed to keep both files
   if (conflict.length > 0) {
-    layoutStore.showHover({
-      prompt: "resolve-conflict",
-      props: {
-        conflict: conflict,
-      },
-      confirm: (event: Event, result: Array<ConflictingResource>) => {
-        event.preventDefault();
-        layoutStore.closeHovers();
-        for (let i = result.length - 1; i >= 0; i--) {
-          const item = result[i];
-          if (item.checked.length == 2) {
-            items[item.index].rename = true;
-          } else if (item.checked.length == 1 && item.checked[0] == "origin") {
-            items[item.index].overwrite = true;
-          } else {
-            items.splice(item.index, 1);
-          }
-        }
-        if (items.length > 0) {
-          action();
-        }
-      },
-    });
-
-    return;
+    for (const c of conflict) {
+      items[c.index].rename = true;
+    }
   }
 
-  action(false, false);
+  action();
 };
 
 const columnsResize = () => {
@@ -822,37 +801,14 @@ const drop = async (event: DragEvent) => {
 
   const preselect = removePrefix(path) + (files[0].fullPath || files[0].name);
 
+  // Auto-resolve: uploads overwrite existing files
   if (conflict.length > 0) {
-    layoutStore.showHover({
-      prompt: "resolve-conflict",
-      props: {
-        conflict: conflict,
-        isUploadAction: true,
-      },
-      confirm: (event: Event, result: Array<ConflictingResource>) => {
-        event.preventDefault();
-        layoutStore.closeHovers();
-        for (let i = result.length - 1; i >= 0; i--) {
-          const item = result[i];
-          if (item.checked.length == 2) {
-            continue;
-          } else if (item.checked.length == 1 && item.checked[0] == "origin") {
-            files[item.index].overwrite = true;
-          } else {
-            files.splice(item.index, 1);
-          }
-        }
-        if (files.length > 0) {
-          upload.handleFiles(files, path, true);
-          fileStore.preselect = preselect;
-        }
-      },
-    });
-
-    return;
+    for (const c of conflict) {
+      files[c.index].overwrite = true;
+    }
   }
 
-  upload.handleFiles(files, path);
+  upload.handleFiles(files, path, conflict.length > 0);
   fileStore.preselect = preselect;
 };
 
@@ -878,36 +834,14 @@ const uploadInput = (event: Event) => {
   const path = route.path.endsWith("/") ? route.path : route.path + "/";
   const conflict = upload.checkConflict(uploadFiles, fileStore.req!.items);
 
+  // Auto-resolve: uploads overwrite existing files
   if (conflict.length > 0) {
-    layoutStore.showHover({
-      prompt: "resolve-conflict",
-      props: {
-        conflict: conflict,
-        isUploadAction: true,
-      },
-      confirm: (event: Event, result: Array<ConflictingResource>) => {
-        event.preventDefault();
-        layoutStore.closeHovers();
-        for (let i = result.length - 1; i >= 0; i--) {
-          const item = result[i];
-          if (item.checked.length == 2) {
-            continue;
-          } else if (item.checked.length == 1 && item.checked[0] == "origin") {
-            uploadFiles[item.index].overwrite = true;
-          } else {
-            uploadFiles.splice(item.index, 1);
-          }
-        }
-        if (uploadFiles.length > 0) {
-          upload.handleFiles(uploadFiles, path, true);
-        }
-      },
-    });
-
-    return;
+    for (const c of conflict) {
+      uploadFiles[c.index].overwrite = true;
+    }
   }
 
-  upload.handleFiles(uploadFiles, path);
+  upload.handleFiles(uploadFiles, path, conflict.length > 0);
 };
 
 const resetOpacity = () => {
